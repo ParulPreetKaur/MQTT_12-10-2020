@@ -11,7 +11,7 @@ import os.path
 # or other MQTT server
 # Make sure the IP or hostname matches the value 
 # you used for Common Name
-mqtt_server_host = "192.168.0.13"
+mqtt_server_host = "192.168.56.1"
 mqtt_server_port = 1883
 mqtt_keepalive = 60
 db_user="postgres"
