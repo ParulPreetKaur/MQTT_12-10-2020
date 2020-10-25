@@ -49,6 +49,19 @@ def get_roadinfo():
   finally:
     print("Data fetched from roadinfo table")
 
+def get_clientdirectionfromdb():
+  try:
+    postgreSQL_clientdirection="SELECT * FROM client_directions"
+    cursor.execute(postgreSQL_clientdirection)
+    clientdirectioninfo = cursor.fetchall()
+    #print(clientdirectioninfo[0][0])
+    #print(clientdirectioninfo[0][1])
+    #print("Total rows are:  ", len(rows_roadinfo))
+    return(clientdirectioninfo)
+
+  finally:
+    print("Data fetched from client_directions table")
+
 
 def get_minoraccidents():
   try:
@@ -60,6 +73,66 @@ def get_minoraccidents():
 
   finally:
     print("Data fetched from minoraccident table")
+
+def get_latlonginfo():
+    try:
+        postgreSQL_latlonginfo = "SELECT * FROM client_latlong"
+        cursor.execute(postgreSQL_latlonginfo)
+        rows_latlong = cursor.fetchall()
+        return (rows_latlong)
+
+
+    finally:
+        print("Data fetched from minoraccident table")
+
+
+def sensor_clientlocation_from_Client1(Topic, client_loc):
+      try:
+          client_info=client_loc.split(':')
+          select_clientdirectioninfo = 'select "Name" from client_directions'
+          cursor.execute(select_clientdirectioninfo)
+          directioninfo = cursor.fetchall()
+          #print(directioninfo)
+          if (client_info[0]==directioninfo[0][0]):
+              print(client_info[0]+"Row already present")
+          elif(client_info[0]==directioninfo[1][0]):
+              print(client_info[0]+"Row already present")
+          else:
+             postgres_insert_query1 = """ INSERT INTO client_directions ("Name" , client_direction) VALUES (%s,%s)"""
+             record1_to_insert = (client_info[0], client_info[1])
+          #   cursor.execute("Rollback")
+             cursor.execute(postgres_insert_query1, record1_to_insert)
+             connection.commit()
+             count = cursor.rowcount
+             print(count, "Record inserted successfully into client_directions table")
+      finally:
+          print("Inserted successfully")
+          return(directioninfo[0][0])
+
+
+def sensor_clientlatlong_from_Client1(Topic, client_latlong):
+    try:
+        client_latlong = client_latlong.split(':')
+        clientinfo = "select client_name from client_latlong"
+        cursor.execute(clientinfo)
+        client_nameinfo = cursor.fetchall()
+        print(client_nameinfo)
+        client_namelist = [item for t in client_nameinfo for item in t]
+        print(client_namelist)
+        if(client_latlong[0] in client_namelist):
+            postgres_update_client_latlong = """update client_latlong set latitude= %s and longitude =%s where client_name=%s"""
+            cursor.execute(postgres_update_client_latlong, (client_latlong[1], client_latlong[2], client_latlong[0]))
+        #if(client_nameinfo[0][0]==client_latlong[0]):
+        else:
+          insert_client_latlong = """ INSERT INTO client_latlong (client_name,latitude,longitude) VALUES (%s,%s,%s)"""
+          recordclientlatlong_to_insert = (client_latlong[0], client_latlong[1], client_latlong[2])
+          cursor.execute(insert_client_latlong, recordclientlatlong_to_insert)
+        connection.commit()
+        count = cursor.rowcount
+        print(count, "Record inserted successfully into client_latlong table")
+    finally:
+        print("Inserted successfully")
+
 
 def sensor_traffic_Handler_from_Client1(Topic, jsonData):
       try:

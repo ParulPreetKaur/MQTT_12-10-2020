@@ -19,3 +19,4 @@ db_password="admin"
 db_host = "127.0.0.1"
 db_port = 5432
 db_database = "Project"
+api_key='AIzaSyBanRU8ivzy-31c9fyMsbzyvj2s1cMC8OU'
