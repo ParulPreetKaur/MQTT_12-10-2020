@@ -62,6 +62,18 @@ def get_clientdirectionfromdb():
   finally:
     print("Data fetched from client_directions table")
 
+def get_V2ISafety():
+  try:
+    select_Query_V2I="SELECT * FROM project_intersectionwarning"
+    cursor.execute(select_Query_V2I)
+    rows_intersectionwarning = cursor.fetchall()
+    #print(len(rows_minoraccident))
+    return(rows_intersectionwarning)
+
+  finally:
+    print("Data fetched from intersectionwarning table")
+
+
 
 def get_minoraccidents():
   try:

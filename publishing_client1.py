@@ -4,6 +4,10 @@ import urllib.parse
 import requests
 from config import api_key
 import json
+import math
+import csv
+import random
+
 
 #from database_connection import cursor, connection, psycopg2
 #import psycopg2
@@ -12,12 +16,12 @@ import json
 def on_connect( client, userdata, flags, rc):
     print("Connected with Code :" +str(rc))
     # Subscribe Topic from here
-    client.subscribe("home/#")
+    #client.subscribe("home/#")
     #client.subscribe("client1/#")
     client.subscribe("weather/#")
-    client.subscribe("roadinfo/#")
-    client.subscribe("client1directionalroadinfo/minoraccident1")
-    client.subscribe("client1/RSUinfo")
+    #client.subscribe("roadinfo/#")
+    #client.subscribe("client1directionalroadinfo/minoraccident1")
+    #client.subscribe("client1/RSUinfo")
 # Callback Function on Receiving the Subscribed Topic/Message
 def on_message( client, userdata, msg):
     # print the message received from the subscribed topic
@@ -31,21 +35,16 @@ client.connect("192.168.56.1", 1883, 60)
 client.loop_start()
 time.sleep(1)
 
-#def publish_executed_command_message():
-    #client.publish("client1", "accident on lane 5 : Switch to lane 3")
-    #time.sleep(5)
-    #client.publish("client1", "heavy traffic at Highway417")
-    #time.sleep(5)
-    #client.publish("client1", "traffic controller at lane 417:drive acc to speed")
-    #time.sleep(5)
+
 
 while True:
+
     Data = {}
     Data1 = {}
-    Data['accident'] = "accident on lane 15:Switch to lane 8562"
-    Data['direction'] = "East to West"
-    Data1['traffic'] = " heavy traffic at HighwaySS7"
-    Data1['directions'] = "North to South"
+    Data['accident'] = "accident on lane 8:Switch to lane 59"
+    Data['direction'] = "West to East"
+    Data1['traffic'] = " Congestion on lane 568"
+    Data1['directions'] = "South to North"
     Data_json_data = json.dumps(Data)
     Data_json_data1 = json.dumps(Data1)
     endpoint = "https://maps.googleapis.com/maps/api/directions/json?"
@@ -73,8 +72,50 @@ while True:
     time.sleep(15)
     client.publish("client1/traffic", Data_json_data1)
     time.sleep(10)
+    with open(r'C:\Users\Dell_\Desktop\coordinates.txt') as csv_file:
+        car1_csv_reader = csv.reader(csv_file, delimiter=',')
+        line_count = 0
+        for car1row in car1_csv_reader:
+            if line_count == 0:
+                print(f'Column names are {", ".join(car1row)}')
+                line_count += 1
+            else:
+                R = 6373.0
+                Distance = []
+                lat1 = math.radians(float(car1row[0]))
+                long1 = math.radians(float(car1row[1]))
+                lat2 = math.radians(45.3529741)
+                long2 = math.radians(-75.8082556718222)
+                dlon = long2 - long1
+                dlat = lat2 - lat1
+                a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+                c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+                distance = R * c
+                Distance.append(distance)
+                print(Distance)
+                if (distance <= 2):
+                    client.subscribe("client/ZoneA")
+                else:
+                    client.subscribe("client/ZoneB")
 
-
+            time.sleep(10)
+            line_count += 1
+        print(f'Processed {line_count} lines.')
+    number = random.uniform(0, 1)
+    print(number)
+    if (number <= 0.25):
+        print(number)
+        client.subscribe("SouthtoNorth/minoraccident1")
+        time.sleep(300)
+    elif (number > 0.25 and number <= 0.5):
+        client.subscribe("NorthtoSouth/minoraccident1")
+        time.sleep(300)
+    elif (number > 0.5 and number <= 0.75):
+        client.subscribe("SouthwesttoNortheast/minoraccident1")
+        time.sleep(300)
+    else:
+        client.subscribe("northeasttosouthwest/minoraccident1")
+        time.sleep(300)
 
 #publish_executed_command_message()
 #connection.rollback()

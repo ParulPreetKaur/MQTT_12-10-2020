@@ -1,0 +1,32 @@
+latlonginfo=get_latlonginfo()
+    tableentries=len(latlonginfo)
+    print(tableentries)
+    Distance = []
+    client_info = []
+    R = 6373.0
+    for info in range(0, tableentries):
+      if(latlonginfo[info][0]!="RSU"):
+        lat1 = math.radians(latlonginfo[info][1])
+        long1 = math.radians(latlonginfo[info][2])
+        lat2 = math.radians(45.3529741)
+        long2 = math.radians(-75.8082556718222)
+        dlon = long2 - long1
+        dlat = lat2 - lat1
+        a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        distance = R * c
+        Distance.append(distance)
+        client_info.append(latlonginfo[info][0])
+    #print(Distance)
+    resultant = {}
+    #print(client_info)
+    print(latlonginfo[info][0]+":"+str(distance))
+    res = dict(zip(client_info, Distance))
+    print(str(res))
+    for i, j in res.items():
+        if(i=='client1' and j<=2):
+            client.publish("client1/RSUinfo", "(roadinfo_required[0][1])")
+        elif(i=='client2' and j<=2):
+            print("hello")
+            client.publish("client2/RSUinfo", "you are on green yellow ")
+    
