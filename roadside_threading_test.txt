@@ -1,0 +1,149 @@
+import _thread
+import time
+import paho.mqtt.client as mqtt
+from queringsql_tables import get_roadinfo, get_weatherdetails, get_minoraccidents, sensor_accident_Handler_from_Client1, sensor_traffic_Handler_from_Client1,sensor_clientlocation_from_Client1,get_clientdirectionfromdb,sensor_clientlatlong_from_Client1,get_latlonginfo,get_V2ISafety,get_minortraffic,get_emergencyinfo
+from database_connectionclose import *
+from database_connection import cursor, connection
+from datetime import datetime
+import math
+#from queringsql_tables import *
+import pandas as pd
+
+# datetime object containing current date and time
+
+now = datetime.now()
+current_date = now.date()
+current_hour = now.hour
+print("current_hour =", current_hour)
+print("current_date =", current_date)
+# Callback Function on Connection with MQTT Server
+def on_connect( client, userdata, flags, rc):
+    print ("Connected with Code :" +str(rc))
+    client.subscribe("client1/accident")
+    client.subscribe("client1/traffic")
+    client.subscribe("client1/direction")
+    client.subscribe("client1/latlong")
+    client.subscribe("client2/latlong")
+
+
+# Callback Function on Receiving the Subscribed Topic/Message
+def on_message( client, userdata, msg):
+    # print the message received from the subscribed topic
+    #print(msg.payload)
+    #print(msg.topic)
+    print("Received message payload: {0}".format(str(msg.payload)))
+    message=msg.payload.decode("utf-8")
+    #print(message)
+
+    if (msg.topic =="client1/accident"):
+     sensor_accident_Handler_from_Client1(msg.topic, message)
+    elif (msg.topic =="client1/traffic"):
+        sensor_traffic_Handler_from_Client1(msg.topic, message)
+    elif (msg.topic =="client1/latlong"):
+         sensor_clientlatlong_from_Client1(msg.topic, message)
+    elif(msg.topic == "client2/latlong"):
+        sensor_clientlatlong_from_Client1(msg.topic, message)
+    else:
+       sensor_clientlocation_from_Client1(msg.topic, message)
+
+
+client = mqtt.Client()
+client.on_connect = on_connect
+client.on_message = on_message
+
+client.connect("192.168.56.1", 1883, 60)
+roadinfo_required = []
+weatherinfo_required = []
+client.loop_start()
+
+time.sleep(1)
+#print("hello")
+def fetch_weather(threadName, delay):
+    emrgencyinfo=get_emergencyinfo()
+    client.publish("emergency", str(emrgencyinfo[0][1]))
+    weatherinfo_required = get_weatherdetails()
+    Totalrows = len(weatherinfo_required)
+    #print(Totalrows)
+    for i in range(0,Totalrows):
+        for weather_date in weatherinfo_required:
+            df = pd.DataFrame({'my_timestamp': pd.date_range(weatherinfo_required[i][4], periods=1)})
+            df['new_date'] = [d.date() for d in df['my_timestamp']]
+            df['new_time'] = [d.time() for d in df['my_timestamp']]
+            df[['h', 'm', 's']] = pd.DataFrame([(x.hour, x.minute, x.second) for x in df['new_time']])
+
+        if str(df.new_date[0]) == '2020-10-11':
+          if str(df.h[0]) == '14':
+            client.publish("NorthtoSouth/weather/forecast", "Chances of Rain:" + str(weatherinfo_required[i][1]) + "%")
+            client.publish("NorthtoSouth/weather/temp", "Temperature:" + str(weatherinfo_required[i][0])+ " degree")
+            client.publish("NorthtoSouth/weather/humidity", "Humidity:" + str(weatherinfo_required[i][2]) +"%")
+            client.publish("NorthtoSouth/weather/visibility", "Visibility: 16.1 kms")
+            #time.sleep(1)
+          if str(df.h[0]) == '12':
+            client.publish("SouthtoNorth/weather/forecast", "Chances of Rain:" + str(weatherinfo_required[i][1]) + "%")
+            client.publish("SouthtoNorth/weather/temp", "Temperature:" + str(weatherinfo_required[i][0]) + " degree")
+            client.publish("SouthtoNorth/weather/humidity", "Humidity:" + str(weatherinfo_required[i][2]) + "%")
+            client.publish("SouthtoNorth/weather/visibility", "Visibility: 10.1 kms")
+          if str(df.h[0]) == '10':
+            client.publish("WesttoEast/weather/forecast", "Chances of Rain:" + str(weatherinfo_required[i][1]) + "%")
+            client.publish("WesttoEast/weather/temp", "Temperature:" + str(weatherinfo_required[i][0]) + " degree")
+            client.publish("WesttoEast/weather/humidity", "Humidity:" + str(weatherinfo_required[i][2]) + "%")
+            client.publish("WesttoEast/weather/visibility", "Visibility: 6.1 kms")
+        else:
+            client.publish("EasttoWest/weather/forecast", "Chances of Rain:" + str(weatherinfo_required[i][1]) + "%")
+            client.publish("EasttoWest/weather/temp", "Temperature:" + str(weatherinfo_required[i][0]) + " degree")
+            client.publish("EasttoWest/weather/humidity", "Humidity:" + str(weatherinfo_required[i][2]) + "%")
+            client.publish("EasttoWest/weather/visibility", "Visibility: 2.1 kms")
+
+
+
+    minoraccident = get_minoraccidents()
+
+    Totalrows_ma = len(minoraccident)
+    location = get_clientdirectionfromdb()
+    client.publish("NorthtoSouth/minoraccident1", str(minoraccident[1][1]))
+    client.publish("WesttoEast/minoraccident1", "ALERT:" + str(minoraccident[2][1]))
+    client.publish("SouthtoNorth/minoraccident1", "ALERT:" + str(minoraccident[0][1]))
+    client.publish("EasttoWest/minoraccident1", str(minoraccident[3][1]))
+
+
+    minortraffic = get_minortraffic()
+    client.publish("SouthtoNorth/minortraffic", "ALERT:" + str(minortraffic[0][1]))
+    client.publish("NorthtoSouth/minortraffic", "ALERT:" + str(minortraffic[1][1]))
+    client.publish("EasttoWest/minortraffic", "ALERT:" + str(minortraffic[2][1]))
+    client.publish("WesttoEast/minortraffic", "ALERT:" + str(minortraffic[3][1]))
+
+
+    V2Isafetyy = get_V2ISafety()
+    roadinfo_required = get_roadinfo()
+    client.publish("client/ZoneA", "ZoneA:" + str(V2Isafetyy[1][1]))
+    time.sleep(5)
+    client.publish("client/ZoneA", "ZoneA:" + str(V2Isafetyy[2][1]))
+    time.sleep(3)
+    client.publish("client/ZoneA", "ZoneA:" + str(V2Isafetyy[3][1]))
+    time.sleep(3)
+    client.publish("client/ZoneA", "ZoneA:" + str(V2Isafetyy[4][1]))
+    time.sleep(2)
+    client.publish("client/ZoneA", "ZoneA:" + str(V2Isafetyy[6][1]))
+    #time.sleep(1)
+    client.publish("client/ZoneB", "ZoneB:" + str(V2Isafetyy[5][1]))
+    client.publish("client/ZoneB", "ZoneB:" + str((roadinfo_required[0][1])))
+    client.publish("client/ZoneB", "ZoneB:" + str(V2Isafetyy[7][1]))
+    #time.sleep(15)
+
+
+    #connection_close()
+#client.loop_stop()
+#client.disconnect()
+
+try:
+   _thread.start_new_thread(fetch_weather, ("WeatherThread", 2, ) )
+   #_thread.start_new_thread( fetch_accident, ("AccidentThread", 4, ) )
+   #_thread.start_new_thread(fetch_minortraffic, ("TrafficThread", 4,))
+   #_thread.start_new_thread(fetch_zonedata, ("ZoneThread", 4,))
+except:
+   print ("Error: unable to start thread")
+
+while 1:
+   pass
+
+client.loop_stop()

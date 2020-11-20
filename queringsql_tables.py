@@ -86,6 +86,29 @@ def get_minoraccidents():
   finally:
     print("Data fetched from minoraccident table")
 
+def get_minortraffic():
+  try:
+    postgreSQL_minortraffic="SELECT * FROM project_minortraffic"
+    cursor.execute(postgreSQL_minortraffic)
+    rows_minortraffic = cursor.fetchall()
+    #print(len(rows_minoraccident))
+    return(rows_minortraffic)
+
+  finally:
+    print("Data fetched from minortraffic table")
+
+def get_emergencyinfo():
+  try:
+    emergencyquery='SELECT * FROM "Emergency communication"'
+    cursor.execute(emergencyquery)
+    rows_emeregency = cursor.fetchall()
+    #print(len(rows_minoraccident))
+    return(rows_emeregency)
+
+  finally:
+    print("Data fetched from emergency table")
+
+
 def get_latlonginfo():
     try:
         postgreSQL_latlonginfo = "SELECT * FROM client_latlong"
@@ -128,9 +151,9 @@ def sensor_clientlatlong_from_Client1(Topic, client_latlong):
         clientinfo = "select client_name from client_latlong"
         cursor.execute(clientinfo)
         client_nameinfo = cursor.fetchall()
-        print(client_nameinfo)
+        #print(client_nameinfo)
         client_namelist = [item for t in client_nameinfo for item in t]
-        print(client_namelist)
+        #print(client_namelist)
         if(client_latlong[0] in client_namelist):
             postgres_update_client_latlong = """update client_latlong set latitude= %s and longitude =%s where client_name=%s"""
             cursor.execute(postgres_update_client_latlong, (client_latlong[1], client_latlong[2], client_latlong[0]))
@@ -189,7 +212,7 @@ def sensor_accident_Handler_from_Client1(Topic, jsonData):
      select_minoraccident = "select direction from project_minoraccident"
      cursor.execute(select_minoraccident)
      accidentinfo = cursor.fetchall()
-     print(accidentinfo[0])
+     #print(accidentinfo[0])
      if (accidentinfo[0][0] == Direction):
          postgres_queryupdate_accident = """update project_minoraccident set minor_accident= %s where direction =%s"""
          cursor.execute(postgres_queryupdate_accident, (accident, accidentinfo[0][0]))
@@ -197,7 +220,7 @@ def sensor_accident_Handler_from_Client1(Topic, jsonData):
          postgres_queryupdate2_accident = """update project_minoraccident set minor_accident= %s where direction =%s"""
          cursor.execute(postgres_queryupdate2_accident, (accident, accidentinfo[2][0]))
      elif (accidentinfo[3][0] == Direction):
-         print(accidentinfo[3][0])
+         #print(accidentinfo[3][0])
          postgres_queryupdate3_accident = """update project_minoraccident set minor_accident= %s where direction =%s"""
          cursor.execute(postgres_queryupdate3_accident, (accident, accidentinfo[3][0]))
      else:

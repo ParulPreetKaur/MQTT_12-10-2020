@@ -1,3 +1,4 @@
+import _thread
 import time
 import paho.mqtt.client as mqtt
 import urllib.parse
@@ -9,7 +10,7 @@ import csv
 import random
 
 
-cname="client1"
+cname = "client1"
 connection_status_topic="sensor/connected/"+cname
 
 def on_disconnect(client, userdata, flags, rc=0):
@@ -49,12 +50,12 @@ client.publish(connection_status_topic,"Client1:Connected",0,True)#use retain fl
 
 
 
-while True:
+def publishing_client1(threadName,delay):
     Data = {}
     Data1 = {}
-    Data['accident'] = "accident on lane 471:Switch to lane 63"
+    Data['accident'] = "accident on lane 2:Switch to lane 3"
     Data['direction'] = "North to South"
-    Data1['traffic'] = " Congestion on lane 568"
+    Data1['traffic'] = " Congestion on lane 8"
     Data1['directions'] = "South to North"
     Data_json_data = json.dumps(Data)
     Data_json_data1 = json.dumps(Data1)
@@ -80,12 +81,14 @@ while True:
     client.publish("client1/latlong", 'client3' + ':' + response[0]["lat"] + ':' + response[0]["lon"])
     time.sleep(10)
     client.publish("client1/accident", Data_json_data)
-    time.sleep(15)
-    client.publish("client1/traffic", Data_json_data1)
     time.sleep(10)
+    client.publish("client1/traffic", Data_json_data1)
+
+
+def subscribing_client(threadName, delay):
     number = random.uniform(0, 1)
     if (number <= 0.25):
-        #print(number)
+        print(number)
         client.subscribe("SouthtoNorth/weather/#")
         client.subscribe("SouthtoNorth/minoraccident1")
         client.subscribe("SouthtoNorth/minortraffic")
@@ -129,7 +132,6 @@ while True:
         client.unsubscribe("SouthtoNorth/weather/#")
         client.unsubscribe("SouthtoNorth/minoraccident1")
         client.unsubscribe("SouthtoNorth/minortraffic")
-
     elif (number > 0.25 and number <= 0.5):
         #print(number)
         client.subscribe("NorthtoSouth/weather/#")
@@ -221,6 +223,7 @@ while True:
         client.unsubscribe("WesttoEast/weather/#")
         client.unsubscribe("WesttoEast/minoraccident1")
         client.unsubscribe("WesttoEast/minortraffic")
+
     else:
         #print(number)
         client.subscribe("EasttoWest/weather/#")
@@ -267,51 +270,14 @@ while True:
         client.unsubscribe("EasttoWest/minoraccident1")
         client.unsubscribe("EasttoWest/minortraffic")
 
-    #with open(r'C:\Users\Dell_\MQTT\coordinates.txt') as csv_file:
-     #   car1_csv_reader = csv.reader(csv_file, delimiter=',')
-      #  line_count = 0
-      #  for car1row in car1_csv_reader:
-       #     if line_count == 0:
-        #        print(f'Column names are {", ".join(car1row)}')
-         #       line_count += 1
-          #  else:
-           #     R = 6373.0
-            #    Distance = []
-             #   lat1 = math.radians(float(car1row[0]))
-              #  long1 = math.radians(float(car1row[1]))
-               # lat2 = math.radians(45.3529741)
-                #long2 = math.radians(-75.8082556718222)
-                #dlon = long2 - long1
-                #dlat = lat2 - lat1
-                #a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
-                #c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-                #distance = R * c
-                #Distance.append(distance)
-                #print(Distance)
-                #if (distance <= 2):
-                 #   print("You are in Zone A")
-                  #  client.subscribe("client/ZoneA")
-                   # time.sleep(20)
-                    #client.unsubscribe("client/ZoneA")
+try:
+   _thread.start_new_thread( publishing_client1, ("PubThread-1", 2, ) )
+   _thread.start_new_thread( subscribing_client, ("SubThread-2", 4, ) )
+except:
+   print ("Error: unable to start thread")
 
-                #else:
-                 #   print("You are in Zone B")
-                  #  client.subscribe("client/ZoneB")
-                   # time.sleep(20)
-                    #client.unsubscribe("client/ZoneB")
-
-            #time.sleep(10)
-            #line_count += 1
-        #print(f'Processed {line_count} lines.')
-
-
-#publish_executed_command_message()
-#connection.rollback()
-
-
-
-
-    #time.sleep(15)
+while 1:
+   pass
 
 client.loop_stop()
 print("updating status and disconnecting")
